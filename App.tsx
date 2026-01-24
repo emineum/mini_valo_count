@@ -1,8 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
-import * as THREE from 'three'; 
+import * as THREE from 'three';
 
-declare const THREE: any;
 
 interface Enemy {
     group: THREE.Group;
@@ -30,38 +29,38 @@ interface Particle {
 }
 
 const App: React.FC = () => {
-    const MAP_SIZE = 25; 
-    const ENEMY_SPEED = 2.0; 
+    const MAP_SIZE = 25;
+    const ENEMY_SPEED = 2.0;
     const PLAYER_MAX_HP = 201;
-    const FIRE_RATE = 110; 
-    
+    const FIRE_RATE = 110;
+
     const playerHP = useRef(PLAYER_MAX_HP);
     const lastHitTime = useRef(0);
-    const INVINCIBILITY_PERIOD = 1000; 
+    const INVINCIBILITY_PERIOD = 1000;
     const isDead = useRef(false);
-    const isSpawnInvincible = useRef(false); 
+    const isSpawnInvincible = useRef(false);
 
     const currentWeapon = useRef<'gun' | 'knife'>('gun');
     const weaponGroup = useRef<THREE.Group>(new THREE.Group());
     const isAttacking = useRef(false);
     const isFiring = useRef(false);
     const lastFireTime = useRef(0);
-    
+
     const mouseShake = useRef(0);
     const score = useRef(0);
     const enemies = useRef<Enemy[]>([]);
     const particles = useRef<Particle[]>([]);
 
     // Recoil state
-    const weaponRecoilZ = useRef(0); 
-    const weaponRecoilRot = useRef(0); 
-    const weaponShakeX = useRef(0); 
-    const weaponShakeY = useRef(0); 
+    const weaponRecoilZ = useRef(0);
+    const weaponRecoilRot = useRef(0);
+    const weaponShakeX = useRef(0);
+    const weaponShakeY = useRef(0);
 
     useEffect(() => {
         // --- 1. Scene Setup ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xffa577); 
+        scene.background = new THREE.Color(0xffa577);
         scene.fog = new THREE.Fog(0xffa577, 20, 100);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -75,7 +74,7 @@ const App: React.FC = () => {
         // --- 2. Lighting ---
         const ambientLight = new THREE.AmbientLight(0xffe0bd, 0.6);
         scene.add(ambientLight);
-        
+
         const sunLight = new THREE.DirectionalLight(0xffd5a1, 1.8);
         sunLight.position.set(-80, 40, -50);
         sunLight.castShadow = true;
@@ -90,7 +89,7 @@ const App: React.FC = () => {
             new THREE.MeshStandardMaterial({ color: 0x1a1a1a, metalness: 0.8, roughness: 0.3 })
         );
         gunMesh.position.set(0.35, -0.3, -0.6);
-        
+
         const knifeGroup = new THREE.Group();
         const bladeShape = new THREE.Shape();
         bladeShape.moveTo(0, 0);
@@ -151,8 +150,8 @@ const App: React.FC = () => {
         const grid = new THREE.GridHelper(MAP_SIZE * 2, 25, 0x444444, 0x222222);
         scene.add(grid);
 
-        const wallMat = new THREE.MeshStandardMaterial({ 
-            color: 0x111111, transparent: true, opacity: 0.4, roughness: 0.1, metalness: 0.5 
+        const wallMat = new THREE.MeshStandardMaterial({
+            color: 0x111111, transparent: true, opacity: 0.4, roughness: 0.1, metalness: 0.5
         });
         const wallHeight = 25;
         const createWall = (w: number, h: number, d: number, x: number, y: number, z: number) => {
@@ -184,17 +183,17 @@ const App: React.FC = () => {
             const fill = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.08), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
             fill.position.z = 0.01;
             healthBarGroup.add(bg, fill);
-            
+
             group.add(body, head, healthBarGroup);
             const angle = Math.random() * Math.PI * 2;
             const radius = 20 + Math.random() * 5;
             group.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-            
+
             return { group, body, head, healthBarFill: fill, health: 150, id: Date.now() + Math.random(), lastAttackTime: 0 };
         };
 
         const spawnEnemies = (count: number) => {
-            for(let i=0; i<count; i++) {
+            for (let i = 0; i < count; i++) {
                 const enemy = createEnemyObj();
                 enemies.current.push(enemy);
                 scene.add(enemy.group);
@@ -209,9 +208,9 @@ const App: React.FC = () => {
                 const color = type === 'fire' ? (Math.random() > 0.5 ? 0xff4400 : 0xffaa00) : 0x882222;
                 const mesh = new THREE.Mesh(
                     new THREE.BoxGeometry(size, size, size),
-                    new THREE.MeshStandardMaterial({ 
-                        color: color, 
-                        transparent: true, 
+                    new THREE.MeshStandardMaterial({
+                        color: color,
+                        transparent: true,
                         emissive: type === 'fire' ? color : 0x000000,
                         emissiveIntensity: type === 'fire' ? 2 : 0
                     })
@@ -224,7 +223,7 @@ const App: React.FC = () => {
                 } else {
                     mesh.position.y += 1.0;
                 }
-                const velocity = type === 'fire' ? 
+                const velocity = type === 'fire' ?
                     new THREE.Vector3((Math.random() - 0.5) * 0.02, 0.05 + Math.random() * 0.05, (Math.random() - 0.5) * 0.02) :
                     new THREE.Vector3((Math.random() - 0.5) * 0.2, Math.random() * 0.2, (Math.random() - 0.5) * 0.2);
                 particles.current.push({ mesh, velocity, life: 1.0, type });
@@ -243,7 +242,7 @@ const App: React.FC = () => {
 
         const respawnPlayer = () => {
             isDead.current = false;
-            isSpawnInvincible.current = true; 
+            isSpawnInvincible.current = true;
             playerHP.current = PLAYER_MAX_HP;
             camera.position.set(0, 1.6, 5);
             velocity.set(0, 0, 0);
@@ -305,12 +304,12 @@ const App: React.FC = () => {
         };
 
         const bullets: Bullet[] = [];
-        const bulletPathLine = new THREE.Line3(); 
+        const bulletPathLine = new THREE.Line3();
 
         const shoot = (isHeavy: boolean = false) => {
             const now = performance.now();
             if (isAttacking.current || !isLocked || isDead.current || isSpawnInvincible.current) return;
-            
+
             if (currentWeapon.current === 'gun') {
                 if (now - lastFireTime.current < FIRE_RATE) return;
                 lastFireTime.current = now;
@@ -322,22 +321,22 @@ const App: React.FC = () => {
                 const direction = new THREE.Vector3();
                 camera.getWorldDirection(direction);
                 mesh.position.copy(camera.position);
-                bullets.push({ 
-                    mesh, 
+                bullets.push({
+                    mesh,
                     velocity: direction.clone().multiplyScalar(3.0),
                     prevPosition: mesh.position.clone()
                 });
                 scene.add(mesh);
 
                 // --- AKM Style Stable Recoil (Instant Kick) ---
-                camera.rotation.x += 0.05 + Math.random() * 0.02; 
-                camera.rotation.y += (Math.random() - 0.5) * 0.03; 
-                
-                weaponRecoilZ.current += 0.22; 
-                weaponRecoilRot.current += 0.25; 
-                weaponShakeX.current = (Math.random() - 0.5) * 0.06; 
-                weaponShakeY.current = (Math.random() - 0.5) * 0.06; 
-                
+                camera.rotation.x += 0.05 + Math.random() * 0.02;
+                camera.rotation.y += (Math.random() - 0.5) * 0.03;
+
+                weaponRecoilZ.current += 0.22;
+                weaponRecoilRot.current += 0.25;
+                weaponShakeX.current = (Math.random() - 0.5) * 0.06;
+                weaponShakeY.current = (Math.random() - 0.5) * 0.06;
+
             } else {
                 isAttacking.current = true;
                 let t = 0;
@@ -414,16 +413,16 @@ const App: React.FC = () => {
         document.addEventListener('mousedown', onMouseDown);
         document.addEventListener('mouseup', onMouseUp);
         document.addEventListener('contextmenu', onContextMenu);
-        
+
         document.addEventListener('mousemove', (e) => {
             if (!isLocked || isDead.current) return;
             camera.rotation.y -= e.movementX * 0.002;
             camera.rotation.x -= e.movementY * 0.002;
-            
+
             // Accumulate shake for speed boost
             const moveDelta = Math.abs(e.movementX) + Math.abs(e.movementY);
             mouseShake.current = Math.min(100, mouseShake.current + moveDelta * 0.25);
-            
+
             weaponGroup.current.position.x = THREE.MathUtils.lerp(weaponGroup.current.position.x, -e.movementX * 0.0004, 0.1);
             weaponGroup.current.position.y = THREE.MathUtils.lerp(weaponGroup.current.position.y, e.movementY * 0.0004, 0.1);
         });
@@ -453,12 +452,12 @@ const App: React.FC = () => {
                     shoot(false);
                 }
 
-                camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
 
                 if (!isDead.current) {
                     // Decay shake value over time
                     mouseShake.current *= 0.94;
-                    
+
                     velocity.x -= velocity.x * 10.0 * delta;
                     velocity.z -= velocity.z * 10.0 * delta;
                     velocity.y -= 9.8 * 3.0 * delta;
@@ -469,15 +468,15 @@ const App: React.FC = () => {
 
                     // --- Integrated Multiplier Logic ---
                     let multiplier = currentWeapon.current === 'knife' ? 1.5 : 1.0;
-                    
+
                     // Check for Boost: Either high mouse shake or airborne shake
                     const isMouseBoosting = mouseShake.current > 20;
                     const isAirborneBoosting = moveState.isAirborne && mouseShake.current > 15;
-                    
+
                     if (isMouseBoosting || isAirborneBoosting) {
                         multiplier = 1.7;
                     }
-                    
+
                     const boostInd = document.getElementById('boost-indicator');
                     if (boostInd) boostInd.style.opacity = (isMouseBoosting || isAirborneBoosting) ? '1' : '0';
 
@@ -522,7 +521,7 @@ const App: React.FC = () => {
                             headMat.color.lerp(new THREE.Color(0x050505), delta * 2);
                         } else {
                             const fadeElapsed = elapsed - 2000;
-                            const fadeFactor = Math.max(0, 1 - (fadeElapsed / 1000)); 
+                            const fadeFactor = Math.max(0, 1 - (fadeElapsed / 1000));
                             if (fadeFactor > 0) {
                                 emitParticles(enemy.group.position, 'fire', 2, fadeFactor);
                                 bodyMat.emissiveIntensity = 2.0 * fadeFactor;
@@ -631,7 +630,7 @@ const App: React.FC = () => {
                 } else {
                     weaponGroup.current.position.y = THREE.MathUtils.lerp(weaponGroup.current.position.y, -1, 0.1);
                 }
-                
+
                 // FOV dynamic zoom effect during boost
                 const targetFOV = (mouseShake.current > 20 && !isDead.current) ? 82 : 75;
                 camera.fov = THREE.MathUtils.lerp(camera.fov, targetFOV, 0.1);
