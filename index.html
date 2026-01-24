@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Tactical FPS Range - Sunset</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #ffa577; font-family: sans-serif; }
+        
+        #crosshair-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .line {
+            position: absolute;
+            background-color: #00ffff;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+
+        .line-h { width: 8px; height: 2px; }
+        .line-v { width: 2px; height: 8px; }
+
+        #instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            background: rgba(40, 20, 10, 0.85);
+            padding: 2.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            z-index: 20;
+            border: 1px solid #632;
+        }
+
+        #death-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(139, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        #boost-indicator, #protection-indicator {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: 900;
+            letter-spacing: 0.2rem;
+            opacity: 0;
+            transition: opacity 0.1s ease;
+            pointer-events: none;
+            z-index: 15;
+            font-style: italic;
+            text-transform: uppercase;
+        }
+
+        #boost-indicator { color: #00ffff; text-shadow: 0 0 10px #00ffff; }
+        #protection-indicator { color: #ffff00; text-shadow: 0 0 10px #ffff00; top: 25%; }
+
+        #damage-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 0, 0, 0);
+            pointer-events: none;
+            z-index: 100;
+            transition: background-color 0.1s ease;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "three": "https://esm.sh/three@^0.182.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <div id="damage-flash"></div>
+    <div id="death-screen">
+        <h2 class="text-7xl font-black italic tracking-tighter mb-4 text-red-400">YOU DIED</h2>
+        <p class="text-xl font-bold uppercase tracking-widest opacity-80">Respawning in 3 seconds...</p>
+    </div>
+
+    <div id="crosshair-container">
+        <div class="line line-h"></div>
+        <div class="line line-v"></div>
+    </div>
+
+    <div id="boost-indicator" class="text-2xl">Boost Active</div>
+    <div id="protection-indicator" class="text-2xl tracking-widest">Protection (2s)</div>
+
+    <div id="instructions">
+        <h1 class="text-4xl font-bold mb-4 tracking-tighter text-orange-400">SUNSET RANGE</h1>
+        <p class="text-lg mb-2 font-bold">TACTICAL TRAINING</p>
+        <p class="text-sm mb-4">Click to Start</p>
+        <p class="text-xs opacity-60 uppercase tracking-widest">WASD: MOVE | WHEEL: SWAP | L-CLICK: ATTACK</p>
+        <div class="mt-4 pt-4 border-t border-white/20">
+            <p class="text-xs text-cyan-400 mt-2 font-bold underline italic">ELIMINATE THE TARGETS & SURVIVE!</p>
+            <p class="text-xs text-white mt-1">MAP: 50x50 | ENEMY SPEED: 2.0 m/s</p>
+        </div>
+    </div>
+
+    <div id="ui" class="absolute top-4 left-4 text-white z-10 pointer-events-none">
+        <div class="bg-black/40 backdrop-blur-md p-4 rounded border border-white/10 flex flex-col gap-4">
+            <div>
+                <p class="text-[10px] uppercase opacity-50 mb-1 tracking-widest">Health</p>
+                <div class="w-48 h-4 bg-gray-800 rounded-full overflow-hidden border border-white/10">
+                    <div id="hp-bar" class="h-full bg-red-500 transition-all duration-300" style="width: 100%;"></div>
+                </div>
+                <p id="hp-text" class="text-right text-[10px] mt-1 font-mono text-red-300">201 / 201</p>
+            </div>
+            <div class="pt-2 border-t border-white/10">
+                <p class="text-[10px] uppercase opacity-50 mb-1 tracking-widest">Eliminations</p>
+                <p id="kill-count" class="text-3xl font-black italic text-cyan-400">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="weapon-ui" class="absolute bottom-4 right-4 text-white z-10 pointer-events-none">
+        <div class="bg-black/40 backdrop-blur-md p-6 rounded-lg border border-white/10 text-right">
+            <p class="text-[10px] uppercase opacity-50 mb-1 tracking-widest">Active Weapon</p>
+            <p id="weapon-type" class="text-3xl font-black italic tracking-tighter">GUN</p>
+        </div>
+    </div>
+
+    <div id="game-container"></div>
+    <script type="module" src="index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "name": "3D FPS Survival Mini-Game_지상익",
+  "description": "A high-performance 3D first-person shooter mini-game built with Three.js featuring WASD movement, Pointer Lock API for camera control, and basic enemy AI with collision detection.",
+  "requestFramePermissions": []
+}
