@@ -69,7 +69,20 @@ const App: React.FC = () => {
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // Ensure canvas stays full screen and doesn't interfere with HUD
+        renderer.domElement.style.position = 'fixed';
+        renderer.domElement.style.top = '0';
+        renderer.domElement.style.left = '0';
+        renderer.domElement.style.zIndex = '0';
         document.body.appendChild(renderer.domElement);
+
+        const handleResize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+        window.addEventListener('resize', handleResize);
 
         // --- 2. Lighting ---
         const ambientLight = new THREE.AmbientLight(0xffe0bd, 0.6);
@@ -646,6 +659,7 @@ const App: React.FC = () => {
             window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('keyup', onKeyUp);
             window.removeEventListener('wheel', onWheel);
+            window.removeEventListener('resize', handleResize);
             document.removeEventListener('mousedown', onMouseDown);
             document.removeEventListener('mouseup', onMouseUp);
             document.removeEventListener('contextmenu', onContextMenu);

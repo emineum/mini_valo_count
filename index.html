@@ -1,6 +1,6 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,8 +8,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #ffa577; font-family: sans-serif; }
-        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #ffa577;
+            font-family: sans-serif;
+        }
+
         #crosshair-container {
             position: absolute;
             top: 50%;
@@ -27,11 +32,18 @@
         .line {
             position: absolute;
             background-color: #00ffff;
-            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+            box-shadow: 0 0 4px rgba(0, 255, 255, 0.8);
         }
 
-        .line-h { width: 8px; height: 2px; }
-        .line-v { width: 2px; height: 8px; }
+        .line-h {
+            width: 12px;
+            height: 2px;
+        }
+
+        .line-v {
+            width: 2px;
+            height: 12px;
+        }
 
         #instructions {
             position: absolute;
@@ -64,7 +76,8 @@
             pointer-events: none;
         }
 
-        #boost-indicator, #protection-indicator {
+        #boost-indicator,
+        #protection-indicator {
             position: absolute;
             top: 20%;
             left: 50%;
@@ -79,8 +92,16 @@
             text-transform: uppercase;
         }
 
-        #boost-indicator { color: #00ffff; text-shadow: 0 0 10px #00ffff; }
-        #protection-indicator { color: #ffff00; text-shadow: 0 0 10px #ffff00; top: 25%; }
+        #boost-indicator {
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        #protection-indicator {
+            color: #ffff00;
+            text-shadow: 0 0 10px #ffff00;
+            top: 25%;
+        }
 
         #damage-flash {
             position: absolute;
@@ -94,7 +115,7 @@
             transition: background-color 0.1s ease;
         }
     </style>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
@@ -104,8 +125,9 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+    <link rel="stylesheet" href="/index.css">
 </head>
+
 <body>
     <div id="damage-flash"></div>
     <div id="death-screen">
@@ -158,4 +180,5 @@
     <div id="game-container"></div>
     <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>
