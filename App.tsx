@@ -473,7 +473,7 @@ const App: React.FC = () => {
             });
 
             const instructions = document.getElementById('instructions');
-            instructions?.addEventListener('click', () => document.body.requestPointerLock());
+            // instructions?.addEventListener('click', () => document.body.requestPointerLock());
             document.addEventListener('pointerlockchange', () => {
                 isLocked = document.pointerLockElement === document.body;
                 if (instructions) instructions.style.display = isLocked ? 'none' : 'block';
