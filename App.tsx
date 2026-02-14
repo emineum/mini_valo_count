@@ -40,6 +40,7 @@ const App: React.FC = () => {
     const isDead = useRef(false);
     const isSpawnInvincible = useRef(false);
     const isThirdPerson = useRef(false);
+    const difficulty = useRef<'normal' | 'hard'>('normal');
     const playerLogicalPos = useRef(new THREE.Vector3(0, 1.6, 5));
     const playerModel = useRef<THREE.Group>(new THREE.Group());
 
@@ -59,6 +60,15 @@ const App: React.FC = () => {
     const weaponRecoilRot = useRef(0);
     const weaponShakeX = useRef(0);
     const weaponShakeY = useRef(0);
+    const accumulatedRecoilX = useRef(0);
+    const accumulatedRecoilY = useRef(0);
+
+    // Mobile state
+    const joystickActive = useRef(false);
+    const joystickPos = useRef({ x: 0, y: 0 });
+    const joystickVector = useRef({ x: 0, y: 0 });
+    const lastTouchPos = useRef<{ [key: number]: { x: number, y: number } }>({});
+    const isTouchDevice = useRef(false);
 
     useEffect(() => {
         // --- 1. Scene Setup ---
@@ -219,7 +229,8 @@ const App: React.FC = () => {
                 const radius = 20 + Math.random() * 5;
                 group.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
 
-                return { group, body, head, healthBarFill: fill, health: 150, id: Date.now() + Math.random(), lastAttackTime: 0 };
+                const maxHealth = difficulty.current === 'hard' ? 250 : 150;
+                return { group, body, head, healthBarFill: fill, health: maxHealth, id: Date.now() + Math.random(), lastAttackTime: 0 };
             };
 
             const spawnEnemies = (count: number) => {
@@ -327,7 +338,8 @@ const App: React.FC = () => {
                 if (enemy.isDying) return;
                 enemy.health -= damage;
                 if (enemy.health < 0) enemy.health = 0;
-                const healthPercent = enemy.health / 150;
+                const maxHealth = difficulty.current === 'hard' ? 250 : 150;
+                const healthPercent = enemy.health / maxHealth;
                 enemy.healthBarFill.scale.setX(healthPercent);
                 enemy.healthBarFill.position.x = -0.55 * (1 - healthPercent);
                 if (enemy.health <= 0) onEnemyDeath(enemy);
@@ -358,9 +370,12 @@ const App: React.FC = () => {
                     });
                     scene.add(mesh);
 
-                    // --- AKM Style Stable Recoil (Instant Kick) ---
-                    camera.rotation.x += 0.05 + Math.random() * 0.02;
-                    camera.rotation.y += (Math.random() - 0.5) * 0.03;
+                    const rx = 0.05 + Math.random() * 0.02;
+                    const ry = (Math.random() - 0.5) * 0.03;
+                    camera.rotation.x += rx;
+                    camera.rotation.y += ry;
+                    accumulatedRecoilX.current += rx;
+                    accumulatedRecoilY.current += ry;
 
                     weaponRecoilZ.current += 0.22;
                     weaponRecoilRot.current += 0.25;
@@ -471,6 +486,148 @@ const App: React.FC = () => {
             window.addEventListener('keyup', onKeyUp);
             window.addEventListener('wheel', onWheel);
 
+            // --- 5. Mobile & Fullscreen Logic ---
+            isTouchDevice.current = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const mobileControlsUI = document.getElementById('mobile-controls');
+            if (isTouchDevice.current && mobileControlsUI) {
+                mobileControlsUI.style.display = 'block';
+            }
+
+            const joystickContainer = document.getElementById('joystick-container');
+            const joystickHandle = document.getElementById('joystick-handle');
+            const shootBtn = document.getElementById('shoot-button');
+            const jumpBtn = document.getElementById('jump-button');
+            const fullscreenBtn = document.getElementById('fullscreen-btn');
+            const startNormalBtn = document.getElementById('start-normal-btn');
+            const startHardBtn = document.getElementById('start-hard-btn');
+
+            const handleJoystickTouch = (e: TouchEvent) => {
+                e.preventDefault();
+                const touch = e.targetTouches[0];
+                const rect = joystickContainer!.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                let dx = touch.clientX - centerX;
+                let dy = touch.clientY - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const maxLen = rect.width / 2;
+
+                if (distance > maxLen) {
+                    dx = (dx / distance) * maxLen;
+                    dy = (dy / distance) * maxLen;
+                }
+
+                joystickVector.current = { x: dx / maxLen, y: -dy / maxLen };
+                if (joystickHandle) {
+                    joystickHandle.style.transform = `translate(${dx}px, ${dy}px)`;
+                }
+            };
+
+            joystickContainer?.addEventListener('touchstart', (e) => {
+                joystickActive.current = true;
+                handleJoystickTouch(e);
+            });
+            joystickContainer?.addEventListener('touchmove', handleJoystickTouch);
+            joystickContainer?.addEventListener('touchend', () => {
+                joystickActive.current = false;
+                joystickVector.current = { x: 0, y: 0 };
+                if (joystickHandle) joystickHandle.style.transform = `translate(0px, 0px)`;
+            });
+
+            shootBtn?.addEventListener('touchstart', (e) => { e.preventDefault(); isFiring.current = true; if (currentWeapon.current === 'knife') shoot(false); });
+            shootBtn?.addEventListener('touchend', (e) => { e.preventDefault(); isFiring.current = false; });
+
+            jumpBtn?.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (moveState.canJump && !isDead.current) {
+                    velocity.y += 10;
+                    moveState.canJump = false;
+                    moveState.isAirborne = true;
+                }
+            });
+
+            const toggleFullscreen = () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                    });
+                } else {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                }
+            };
+
+            fullscreenBtn?.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleFullscreen();
+            });
+
+            const startGame = (diff: 'normal' | 'hard') => {
+                difficulty.current = diff;
+                if (isTouchDevice.current) {
+                    toggleFullscreen();
+                    isLocked = true; // Manual lock for mobile
+                    if (instructions) instructions.style.display = 'none';
+                } else {
+                    document.body.requestPointerLock();
+                    if (instructions) instructions.style.display = 'none';
+                }
+
+                // Reset game if re-starting
+                score.current = 0;
+                const scoreEl = document.getElementById('kill-count');
+                if (scoreEl) scoreEl.innerText = '0';
+
+                enemies.current.forEach(e => scene.remove(e.group));
+                enemies.current = [];
+                spawnEnemies(5);
+            };
+
+            startNormalBtn?.addEventListener('click', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                startGame('normal');
+            });
+
+            startHardBtn?.addEventListener('click', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                startGame('hard');
+            });
+
+            // Remove the old listener logic if it existed, but we replaced the button so it's fine.
+
+            // Camera Swipe Rotation
+            document.addEventListener('touchstart', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    // Only track touches on the right half of the screen for rotation
+                    if (touch.clientX > window.innerWidth / 2) {
+                        lastTouchPos.current[touch.identifier] = { x: touch.clientX, y: touch.clientY };
+                    }
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchmove', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    const last = lastTouchPos.current[touch.identifier];
+                    if (last) {
+                        const dx = touch.clientX - last.x;
+                        const dy = touch.clientY - last.y;
+
+                        camera.rotation.y -= dx * 0.005;
+                        camera.rotation.x -= dy * 0.005;
+
+                        lastTouchPos.current[touch.identifier] = { x: touch.clientX, y: touch.clientY };
+                    }
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchend', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    delete lastTouchPos.current[e.changedTouches[i].identifier];
+                }
+            });
+
             let prevTime = performance.now();
             const animate = () => {
                 requestAnimationFrame(animate);
@@ -483,6 +640,17 @@ const App: React.FC = () => {
                     }
 
                     camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+
+                    // --- Recoil Recovery Logic (after 0.2s) ---
+                    if (time - lastFireTime.current > 200) {
+                        const recoverSpeed = 0.08;
+                        const recoverX = accumulatedRecoilX.current * recoverSpeed;
+                        const recoverY = accumulatedRecoilY.current * recoverSpeed;
+                        camera.rotation.x -= recoverX;
+                        camera.rotation.y -= recoverY;
+                        accumulatedRecoilX.current -= recoverX;
+                        accumulatedRecoilY.current -= recoverY;
+                    }
 
                     if (!isDead.current) {
                         // Decay shake value over time
@@ -511,8 +679,16 @@ const App: React.FC = () => {
                         if (boostInd) boostInd.style.opacity = (isMouseBoosting || isAirborneBoosting) ? '1' : '0';
 
                         const moveSpeed = 80.0 * multiplier;
+
+                        // Keyboard movement
                         if (moveState.forward || moveState.backward) velocity.z -= direction.z * moveSpeed * delta;
                         if (moveState.left || moveState.right) velocity.x -= direction.x * moveSpeed * delta;
+
+                        // Joystick movement
+                        if (joystickActive.current) {
+                            velocity.z -= joystickVector.current.y * moveSpeed * delta;
+                            velocity.x -= joystickVector.current.x * moveSpeed * delta;
+                        }
 
                         const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
                         camDir.y = 0; camDir.normalize();
@@ -604,7 +780,8 @@ const App: React.FC = () => {
                             const closestHead = new THREE.Vector3();
                             bulletPathLine.closestPointToPoint(headPos, true, closestHead);
                             if (closestHead.distanceTo(headPos) < 0.8) {
-                                applyDamage(enemy, 150); hit = true; break;
+                                // Headshot: instant kill regardless of difficulty
+                                applyDamage(enemy, difficulty.current === 'hard' ? 250 : 150); hit = true; break;
                             }
                             const closestBody = new THREE.Vector3();
                             bulletPathLine.closestPointToPoint(bodyPos, true, closestBody);

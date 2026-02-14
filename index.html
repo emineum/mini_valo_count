@@ -125,7 +125,7 @@
   }
 }
 </script>
-    <link rel="stylesheet" href="/index.css">
+    <link rel="stylesheet" href="index.css">
 </head>
 
 <body>
@@ -146,12 +146,31 @@
     <div id="instructions">
         <h1 class="text-4xl font-bold mb-4 tracking-tighter text-orange-400">SUNSET RANGE</h1>
         <p class="text-lg mb-2 font-bold">TACTICAL TRAINING</p>
-        <p class="text-sm mb-4">Click to Start</p>
-        <p class="text-xs opacity-60 uppercase tracking-widest">WASD: MOVE | WHEEL: SWAP | L-CLICK: ATTACK</p>
+        <p class="text-sm mb-4">Tap/Click to Start</p>
+        <div class="hidden sm:block">
+            <p class="text-xs opacity-60 uppercase tracking-widest">WASD: MOVE | WHEEL: SWAP | L-CLICK: ATTACK</p>
+        </div>
+        <div class="flex flex-col gap-2 mt-2">
+            <button id="start-normal-btn"
+                class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded uppercase tracking-wider transition-colors">NORMAL
+                MODE</button>
+            <button id="start-hard-btn"
+                class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded uppercase tracking-wider transition-colors">HARD
+                MODE</button>
+        </div>
         <div class="mt-4 pt-4 border-t border-white/20">
             <p class="text-xs text-cyan-400 mt-2 font-bold underline italic">ELIMINATE THE TARGETS & SURVIVE!</p>
             <p class="text-xs text-white mt-1">MAP: 50x50 | ENEMY SPEED: 2.0 m/s</p>
         </div>
+    </div>
+
+    <div id="mobile-controls">
+        <div id="joystick-container">
+            <div id="joystick-handle"></div>
+        </div>
+        <div id="shoot-button">FIRE</div>
+        <div id="jump-button">JUMP</div>
+        <button id="fullscreen-btn">FULLSCREEN</button>
     </div>
 
     <div id="ui" class="absolute top-4 left-4 text-white z-10 pointer-events-none">
